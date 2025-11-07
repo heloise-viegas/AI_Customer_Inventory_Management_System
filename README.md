@@ -1,53 +1,50 @@
-🚀 Automating Google Form Submissions with AWS Bedrock (via Flask API) using Google Apps Script
+# Automate Google Form Submissions with AWS Bedrock (via Flask API & Google Apps Script)
 
-This project connects a Google Form to a backend API (e.g., Flask on AWS EC2) that uses Amazon Bedrock for intelligent classification of customer messages.
+This project connects a Google Form to a backend API (for example, a Flask app running locally or on EC2) and uses Amazon Bedrock for intelligent classification of customer messages. Form submissions are automatically forwarded to your backend — no manual intervention required.
 
-Whenever someone submits the form, the data is automatically sent to your backend — no manual intervention needed.
-
-🧩 Architecture Overview
+Architecture
+-----------
 Google Form → Google Apps Script → Backend API → Amazon Bedrock → Response Logged
 
-🪄 Features
+Features
+--------
+- ✅ Automatically triggers on every Google Form submission
+- ✅ Sends form data securely to your backend endpoint
+- ✅ Supports Bedrock AI analysis or any other API integration
+- ✅ Logs all submissions and responses in Google Apps Script
+- ✅ Works with ngrok for quick HTTPS testing
 
-✅ Automatically triggers on every Google Form submission
-✅ Sends form data securely to your backend endpoint
-✅ Supports Bedrock AI analysis or any other API integration
-✅ Logs all submissions and responses in Google Apps Script
-✅ Works with ngrok for quick HTTPS testing
+Prerequisites
+-------------
+- A Google Form
+- Access to Google Apps Script
+- A backend API endpoint (e.g., Flask running locally or on EC2)
+- (Optional) ngrok for tunneling local servers
 
-🧰 Prerequisites
+Step 1 — Create the Google Form
+-------------------------------
+Create a new form named `Customer Inquiry Form` with the following fields:
 
-A Google Form
+| Label                  | Type          |
+|------------------------|---------------|
+| Name                   | Short answer  |
+| Organization           | Short answer  |
+| Email                  | Short answer  |
+| Country                | Short answer  |
+| Reason for Contacting  | Paragraph     |
 
-Access to Google Apps Script
-
-A backend API endpoint (e.g., Flask running locally or on EC2)
-
-(Optional) ngrok for tunneling local servers
-
-🧱 Step 1. Create a Google Form
-
-Create a new form called Customer Inquiry Form with these fields:
-
-Label	Type
-Name	Short answer
-Organization	Short answer
-Email	Short answer
-Country	Short answer
-Reason for Contacting	Paragraph
-🧩 Step 2. Open Google Apps Script
-
+Step 2 — Open Google Apps Script
+--------------------------------
 From the form editor:
+- Click the three dots (⋮) at the top-right → **Script editor**
 
-⋮ (three dots in top-right) → Script editor
+You’ll be redirected to the Apps Script project that is container-bound to your form.
 
+Step 3 — Add the Apps Script
+----------------------------
+Paste the following code into the Apps Script editor:
 
-You’ll be redirected to the Apps Script project linked to your form (container-bound).
-
-🧠 Step 3. Add the Apps Script
-
-Paste this code inside the editor:
-
+```javascript
 function onFormSubmit(e) {
   Logger.log("📦 Raw event: " + JSON.stringify(e, null, 2));
 
@@ -86,70 +83,63 @@ function setupTriggerProper() {
     .onFormSubmit()
     .create();
 }
+```
 
-⚙️ Step 4. Set Up the Trigger
-
+Step 4 — Set Up the Trigger
+---------------------------
 In the Apps Script editor:
+- Click **Triggers** (clock icon on the left)
+- Add a new trigger with:
+  - Function: `onFormSubmit`
+  - Event source: `From form`
+  - Event type: `On form submit`
+- Save and authorize when prompted
 
-Click Triggers (clock icon on the left).
+Step 5 — Create a Public Endpoint (with ngrok)
+----------------------------------------------
+If your backend is running locally or on an instance without a public IP, use ngrok to create a public HTTPS tunnel.
 
-Add a new trigger with these settings:
-
-Function: onFormSubmit
-
-Event source: From form
-
-Event type: On form submit
-
-Save and authorize when prompted.
-
-🌐 Step 5. Create a Public Endpoint (with ngrok)
-
-If your backend is running locally or on EC2, use ngrok to create a public HTTPS tunnel.
-
-Install ngrok
+Install ngrok:
+```bash
 wget https://bin.equinox.io/c/4VmDzA7iaHb/ngrok-stable-linux-amd64.tgz
 tar -xvzf ngrok-stable-linux-amd64.tgz
 sudo mv ngrok /usr/local/bin/
+```
 
-Authenticate ngrok
+Authenticate ngrok:
+```bash
 ngrok config add-authtoken YOUR_AUTHTOKEN
+```
 
-Run ngrok
+Run ngrok (example for a Flask app on port 5000):
+```bash
 ngrok http 5000
+```
 
-
-You’ll get an output like:
-
+You’ll see an output such as:
+```
 Forwarding  https://abcd1234.ngrok-free.app -> http://localhost:5000
+```
 
-
-Copy that public HTTPS URL and replace this line in your Apps Script:
-
+Copy the public HTTPS URL and replace the URL in the Apps Script:
+```js
 var url = "https://abcd1234.ngrok-free.app/submit";
+```
 
-🧾 Step 6. Test the Integration
+Step 6 — Test the Integration
+-----------------------------
+- Submit the Google Form.
+- In Apps Script → Executions, you should see logs like:
+  - "✅ API Response: { "success": true, "bedrock_output": {...} }"
+- Check your backend logs to confirm receipt and processing.
 
-Submit your Google Form
+Step 7 — Keep ngrok Running in the Background (Optional)
+-------------------------------------------------------
+Create a systemd service to keep ngrok active (example):
 
-Go to Apps Script → Executions
+Create `/etc/systemd/system/ngrok.service` with:
 
-You’ll see logs like:
-
-✅ API Response: { "success": true, "bedrock_output": {...} }
-
-
-You can also check your backend logs (if you’ve implemented them).
-
-🧩 Step 7. Keep ngrok Running in the Background (Optional)
-
-Create a systemd service to keep ngrok active:
-
-sudo nano /etc/systemd/system/ngrok.service
-
-
-Paste this:
-
+```ini
 [Unit]
 Description=ngrok tunnel
 After=network.target
@@ -164,21 +154,27 @@ StandardError=append:/var/log/ngrok.log
 
 [Install]
 WantedBy=multi-user.target
-
+```
 
 Enable & start it:
-
+```bash
 sudo systemctl enable ngrok
 sudo systemctl start ngrok
+```
 
-✅ End-to-End Test Summary
-Step	Description	Status
-Google Form created	5 fields	✅
-Apps Script added	Trigger setup done	✅
-Backend exposed via ngrok	HTTPS URL active	✅
-Form submission tested	Logs captured	✅
-API response logged	Bedrock integrated	✅
-🧠 Example Log Output
+End-to-End Test Summary
+-----------------------
+| Step                             | Description                         | Status |
+|----------------------------------|-------------------------------------|--------|
+| Google Form created              | 5 fields                            | ✅     |
+| Apps Script added                | Trigger setup done                  | ✅     |
+| Backend exposed via ngrok        | HTTPS URL active                    | ✅     |
+| Form submission tested           | Logs captured                       | ✅     |
+| API response logged              | Bedrock integrated                  | ✅     |
+
+Example Log Output
+------------------
+```
 📦 Raw event: {...}
 Name: John Doe
 Organization: Example Corp
@@ -186,17 +182,18 @@ Email: john@example.com
 Country: India
 Reason for Contacting: Need support with setup
 ✅ API Response: {"success": true, "category": "Support", "priority": "Medium"}
+```
 
-💡 Summary
+Summary
+-------
+You’ve automated Google Form submissions using:
+- Google Apps Script to capture responses
+- HTTP POST integration to your backend
+- ngrok for secure tunneling (optional)
+- Amazon Bedrock (or any AI model) for intelligent classification
 
-You’ve successfully automated Google Form submissions using:
+This setup is simple, cloud-friendly, and fully customizable — ideal for automating lead capture, support triage, or workflow processing.
 
-Google Apps Script to capture responses
-
-HTTP POST integration to your backend
-
-ngrok for secure tunneling
-
-Amazon Bedrock (or any AI model) for intelligent classification
-
-This approach is simple, cloud-friendly, and fully customizable — perfect for automating lead capture, support triage, or workflow processing.
+- Generate a ready-to-deploy Flask endpoint example that accepts the form payload and calls Bedrock
+- Add automated tests or CI instructions
+- Add environment / security notes for production deployment
