@@ -1,69 +1,76 @@
 from flask import Flask, request, jsonify
 import boto3
 import json
-app = Flask(__name__)   # creates flask application object 
+import logging
+from email_utils import send_priority_email
 
-bedrock=boto3.client(service_name="bedrock-runtime", region_name="ap-south-1")  # create Bedrock client
-  
-# A decorator used to tell the application 
-# which URL is associated function 
-@app.route('/submit',methods=['POST'])       # route to display the message
-def get_form_data():    #binds function to route
+logging.basicConfig(level=logging.INFO, format='%(asctime)s %(levelname)s: %(message)s')
+
+app = Flask(__name__)
+
+bedrock = boto3.client("bedrock-runtime", region_name="ap-south-1")
+
+@app.route('/submit', methods=['POST'])
+def get_form_data():
     data = request.get_json()
-    print("📥 Received from form:", data)
+    logging.info(f"📥 Received from form: {data}")
 
-    # Extract the user's message/reason
-    reason = data.get("reason", "No message provided")
-
-    # Construct the prompt for Titan
-    prompt = f"""
-    You are a smart customer support assistant.
-    Analyze the following customer message and classify it.
-
-    Message: "{reason}"
-
-    Return your response in JSON format with these fields:
-    - category: One of [Sales Inquiry, Billing, Support, General]
-    - priority: One of [Low, Medium, Urgent, Very Urgent]
-    - short_summary: A short one-sentence summary of what the customer wants.
-    """
+    payload = {
+        "name": data.get("name", ""),
+        "organization": data.get("organization", ""),
+        "email": data.get("email", ""),
+        "country": data.get("country", ""),
+        "reason": data.get("reason", "")
+    }
 
     try:
-        # Call Amazon Titan Text Express
+        reason = payload["reason"]
+
+        prompt = f"""
+        You are a classifier. Read the user message below and return ONLY a JSON object.
+
+        User Reason:
+        {reason}
+
+        Return JSON ONLY in this exact format:
+        {{
+        "category": "Billing | Technical | Other",
+        "priority": "High | Medium | Low",
+        "summary": "Write a one sentence summary"
+        }}
+        NO explanation. ONLY JSON.
+        """
+
         response = bedrock.invoke_model(
-            modelId="amazon.titan-text-express-v1",
-            body=json.dumps({
-                "inputText": prompt,
-                "textGenerationConfig": {
-                    "maxTokenCount": 256,
-                    "temperature": 0.3
-                }
-            }),
+            modelId="amazon.titan-text-lite-v1",
+            contentType="application/json",
             accept="application/json",
-            contentType="application/json"
+            body=json.dumps({"inputText": prompt})
         )
 
-        # Parse Bedrock's response
-        result = json.loads(response['body'].read())
-        output_text = result.get("results", [{}])[0].get("outputText", "").strip()
+        raw = json.loads(response["body"].read())
 
-        print("🧠 Bedrock raw output:", output_text)
+        # Titan returns this structure:
+        # {"results":[{"outputText":"..."}]}
+        output_text = raw["results"][0]["outputText"].strip()
 
-        # Try to cleanly parse the model's JSON if it outputs valid JSON text
+        logging.info(f"🧠 Bedrock raw output: {output_text}")
+
         try:
             parsed_output = json.loads(output_text)
-        except Exception:
+        except:
             parsed_output = {"raw_text": output_text}
 
-        return jsonify({
-            "success": True,
-            "bedrock_output": parsed_output
-        }), 200
+        priority = parsed_output.get("priority", "Low")
+        logging.info(f"🧠 Parsed Bedrock output: {priority}")
+        logging.info("📧 Sending alert email...")
+        send_priority_email(priority, payload, parsed_output)
+
+        return jsonify({"success": True, "bedrock_output": parsed_output}), 200
 
     except Exception as e:
-        print("❌ Error in Bedrock call:", str(e))
+        logging.error(f"❌ Error in /submit: {str(e)}")
         return jsonify({"success": False, "error": str(e)}), 500
 
-  
-if __name__=='__main__': # run the application if app.py is executed directly
-   app.run(host='0.0.0.0', port=5000, debug=False, use_reloader=False)
+if __name__ == "__main__":
+    app.run(host="0.0.0.0", port=5000, debug=True)
