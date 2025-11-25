@@ -183,6 +183,12 @@ Country: India
 Reason for Contacting: Need support with setup
 ✅ API Response: {"success": true, "category": "Support", "priority": "Medium"}
 ```
+Step 6 — Test the Integration
+-----------------------------
+- Create and configure email id for SES
+- Create a email_utils.py to
+- Create a policy to allow EC2 to use SES
+- Create template to send the email.
 
 Summary
 -------
