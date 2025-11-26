@@ -1,4 +1,4 @@
-# Automate Google Form Submissions with AWS Bedrock (via Flask API & Google Apps Script)
+# Smart Customer Inverntory with AWS Bedrock (via Flask API & Google Apps Script)
 
 This project connects a Google Form to a backend API (a Flask app running on EC2) and uses Amazon Bedrock for intelligent classification of customer messages. Form submissions are automatically forwarded to your backend — no manual intervention required.
 
@@ -227,7 +227,8 @@ You’ve automated Google Form submissions using:
 - HTTP POST integration to your backend
 - ngrok for secure tunneling (optional)
 - Amazon Bedrock (or any AI model) for intelligent classification
-- Amazon SES to send email alerts
+- Amazon SES to send email alerts<img width="1315" height="208" alt="image" src="https://github.com/user-attachments/assets/aef25f80-bd99-4f5f-9942-0136f6784e60" />
+
 
 This setup is simple, cloud-friendly, and fully customizable — ideal for automating lead capture, support triage, or workflow processing.
 
