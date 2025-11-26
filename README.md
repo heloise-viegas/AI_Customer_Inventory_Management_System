@@ -50,41 +50,63 @@ Paste the following code into the Apps Script editor:
 function onFormSubmit(e) {
   Logger.log("📦 Raw event: " + JSON.stringify(e, null, 2));
 
-  if (e && e.response) {
-    var itemResponses = e.response.getItemResponses();
-    var payload = {};
+  // Ensure the event object exists
+  if (!e) {
+    Logger.log("⚠️ Missing event object — did this trigger from a form?");
+    return;
+  }
 
-    itemResponses.forEach(function(item) {
-      var title = item.getItem().getTitle();
-      var answer = item.getResponse();
-      payload[title] = answer;
-      Logger.log(title + ": " + answer);
-    });
+  // Capture item responses (safer than namedValues)
+  var itemResponses = e.response.getItemResponses();
+  var payload = {};
 
-    try {
-      var url = "https://YOUR_NGROK_URL_OR_PUBLIC_API/submit"; // Replace with your endpoint
-      var options = {
-        method: "post",
-        contentType: "application/json",
-        payload: JSON.stringify(payload)
-      };
-      var response = UrlFetchApp.fetch(url, options);
-      Logger.log("✅ API Response: " + response.getContentText());
-    } catch (err) {
-      Logger.log("❌ Error sending to API: " + err);
-    }
-  } else {
-    Logger.log("⚠️ Missing form response event data");
+  itemResponses.forEach(function(item) {
+    var title = item.getItem().getTitle();
+    var response = item.getResponse();
+    payload[title] = response;
+    Logger.log("📝 " + title + ": " + response);
+  });
+
+  // Prepare your Flask API endpoint
+  var url = "https://pauletta-hiltless-gordon.ngrok-free.dev/submit";
+
+  // Prepare options
+  var options = {
+    method: "post",
+    contentType: "application/json",
+    payload: JSON.stringify(payload),
+    muteHttpExceptions: true // <-- capture error responses too
+  };
+
+  try {
+    // Send to Flask
+    var response = UrlFetchApp.fetch(url, options);
+
+    // Log everything about the Bedrock/Flask response
+    Logger.log("✅ Status: " + response.getResponseCode());
+    Logger.log("✅ Flask/Bedrock response: " + response.getContentText());
+  } catch (err) {
+    Logger.log("❌ Error sending to Flask/Bedrock: " + err);
   }
 }
 
 function setupTriggerProper() {
+  // Optional safety cleanup of duplicates
+  const allTriggers = ScriptApp.getProjectTriggers();
+  allTriggers.forEach(t => {
+    if (t.getHandlerFunction() === "onFormSubmit") {
+      ScriptApp.deleteTrigger(t);
+    }
+  });
+
   const form = FormApp.getActiveForm();
   ScriptApp.newTrigger("onFormSubmit")
     .forForm(form)
     .onFormSubmit()
     .create();
+  Logger.log("✅ Clean trigger created successfully");
 }
+
 ```
 
 Step 4 — Set Up the Trigger
@@ -136,7 +158,8 @@ Step 7 — Test the Integration
 -----------------------------
 - Submit the Google Form.
 - In Apps Script → Executions, you should see logs like:
-  - "✅ API Response: { "success": true, "bedrock_output": {...} }"
+  - "✅ API Response: { "success": true, "bedrock_output": {...} }"<img width="1919" height="651" alt="image" src="https://github.com/user-attachments/assets/b01a5484-4e72-4c46-9b73-5e765d79f504" />
+
 - Check your backend logs to confirm receipt and processing.
 
 Step 8 — Keep ngrok Running in the Background (Optional)
