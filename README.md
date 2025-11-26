@@ -1,10 +1,10 @@
 # Automate Google Form Submissions with AWS Bedrock (via Flask API & Google Apps Script)
 
-This project connects a Google Form to a backend API (for example, a Flask app running locally or on EC2) and uses Amazon Bedrock for intelligent classification of customer messages. Form submissions are automatically forwarded to your backend — no manual intervention required.
+This project connects a Google Form to a backend API (a Flask app running on EC2) and uses Amazon Bedrock for intelligent classification of customer messages. Form submissions are automatically forwarded to your backend — no manual intervention required.
 
 Architecture
 -----------
-Google Form → Google Apps Script → Backend API → Amazon Bedrock → Response Logged
+Google Form → Google Apps Script → Backend API → Amazon Bedrock → Response Logged → Email Alert 
 
 Features
 --------
@@ -12,6 +12,7 @@ Features
 - ✅ Sends form data securely to your backend endpoint
 - ✅ Supports Bedrock AI analysis or any other API integration
 - ✅ Logs all submissions and responses in Google Apps Script
+- ✅ Send email to resective teams based on urgency of the request
 - ✅ Works with ngrok for quick HTTPS testing
 
 Prerequisites
@@ -20,6 +21,7 @@ Prerequisites
 - Access to Google Apps Script
 - A backend API endpoint (e.g., Flask running locally or on EC2)
 - (Optional) ngrok for tunneling local servers
+- Access to AWS
 
 Step 1 — Create the Google Form
 -------------------------------
@@ -97,6 +99,10 @@ In the Apps Script editor:
 
 Step 5 — Create a Public Endpoint (with ngrok)
 ----------------------------------------------
+- Create the main app.py file. This conatins the main logic that receives the form data and sends it to Bedrock. If a valid resonse is received from Bedrock, then it triggers an email via ses. The email functionality is in email_utils.y file.
+  
+Step 6 — Create a Public Endpoint (with ngrok)
+----------------------------------------------
 If your backend is running locally or on an instance without a public IP, use ngrok to create a public HTTPS tunnel.
 
 Install ngrok:
@@ -126,14 +132,14 @@ Copy the public HTTPS URL and replace the URL in the Apps Script:
 var url = "https://abcd1234.ngrok-free.app/submit";
 ```
 
-Step 6 — Test the Integration
+Step 7 — Test the Integration
 -----------------------------
 - Submit the Google Form.
 - In Apps Script → Executions, you should see logs like:
   - "✅ API Response: { "success": true, "bedrock_output": {...} }"
 - Check your backend logs to confirm receipt and processing.
 
-Step 7 — Keep ngrok Running in the Background (Optional)
+Step 8 — Keep ngrok Running in the Background (Optional)
 -------------------------------------------------------
 Create a systemd service to keep ngrok active (example):
 
@@ -183,7 +189,7 @@ Country: India
 Reason for Contacting: Need support with setup
 ✅ API Response: {"success": true, "category": "Support", "priority": "Medium"}
 ```
-Step 8 — Send smart Alerts based on priority
+Step 9 — Send smart Alerts based on priority
 -----------------------------
 - Create and configure email ID for SES
 - Create a email_utils.py to send emails using ses function
@@ -221,6 +227,7 @@ You’ve automated Google Form submissions using:
 - HTTP POST integration to your backend
 - ngrok for secure tunneling (optional)
 - Amazon Bedrock (or any AI model) for intelligent classification
+- Amazon SES to send email alerts
 
 This setup is simple, cloud-friendly, and fully customizable — ideal for automating lead capture, support triage, or workflow processing.
 
