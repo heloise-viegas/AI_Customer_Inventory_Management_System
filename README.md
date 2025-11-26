@@ -183,7 +183,7 @@ Country: India
 Reason for Contacting: Need support with setup
 ✅ API Response: {"success": true, "category": "Support", "priority": "Medium"}
 ```
-Step 6 — Send smart Alerts based on priority
+Step 8 — Send smart Alerts based on priority
 -----------------------------
 - Create and configure email ID for SES
 - Create a email_utils.py to send emails using ses function
