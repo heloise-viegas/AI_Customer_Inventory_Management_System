@@ -183,12 +183,36 @@ Country: India
 Reason for Contacting: Need support with setup
 ✅ API Response: {"success": true, "category": "Support", "priority": "Medium"}
 ```
-Step 6 — Test the Integration
+Step 6 — Send smart Alerts based on priority
 -----------------------------
-- Create and configure email id for SES
-- Create a email_utils.py to
+- Create and configure email ID for SES
+- Create a email_utils.py to send emails using ses function
+  ```bash
+            response = ses.send_email(
+            Source="heloiseviegas03@gmail.com",
+            Destination={"ToAddresses": [email]},
+            Message={
+                "Subject": {"Data": subject},
+                "Body": {"Text": {"Data": body}}
+            }
+        )
+  ```
 - Create a policy to allow EC2 to use SES
-- Create template to send the email.
+  ```bash
+  {
+    "Version": "2012-10-17",
+    "Statement": [
+        {
+            "Effect": "Allow",
+            "Action": [
+                "ses:SendEmail",
+                "ses:SendRawEmail"
+            ],
+            "Resource": "*"
+        }
+    ]
+  }
+  ```
 
 Summary
 -------
